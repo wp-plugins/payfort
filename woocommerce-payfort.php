@@ -2,7 +2,7 @@
 /*
 Plugin Name: Payfort (Start)
 Description: Payfort makes it really easy to start accepting online payments (credit &amp; debit cards) in the Middle East. Sign up is instant, at https://start.payfort.com/
-Version: 0.0.13
+Version: 0.0.14
 Plugin URI: https://start.payfort.com
 Author: Payfort
 Author URI: https://start.payfort.com
@@ -316,7 +316,7 @@ function woocommerce_payfort(){
          */
         function payfort_preload_checkout() {
           ?>
-          <script src="http://beautiful.start.dev/checkout.js"></script>
+          <script src="https://beautiful.start.payfort.com/checkout.js"></script>
           <script>
           StartCheckout.config({
             key: "<?php echo $this->test_mode == 'yes'? $this->test_open_key : $this->live_open_key ?>",
