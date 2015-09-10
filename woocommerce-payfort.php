@@ -2,14 +2,14 @@
 /*
 Plugin Name: Payfort (Start)
 Description: Payfort makes it really easy to start accepting online payments (credit &amp; debit cards) in the Middle East. Sign up is instant, at https://start.payfort.com/
-Version: 0.0.11
+Version: 0.0.12
 Plugin URI: https://start.payfort.com
 Author: Payfort
 Author URI: https://start.payfort.com
 License: Under GPL2
 */
 
-require plugin_dir_path(__FILE__).'vendor/payfort/start/Payfort.php';
+require plugin_dir_path(__FILE__).'vendor/payfort/start/Start.php';
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
@@ -200,28 +200,23 @@ function woocommerce_payfort(){
           }
           ?>
 
+
+          <div id="payfortCardDetails" style="display: none"></div>
+          <input id="addCardBtn" type="button" value="Enter Card Details"/>
+          <a id="changeCardBtn" href="#_" style="display:none">Change Card Details</a>
+
           <!-- Attach our custom form handlers -->
           <script>
           jQuery(function(){
 
-            /**
-             * Override the normal Place Order behavior. We want to display the checkout
-             * modal dialog.
-             */
-            jQuery('#place_order').unbind('click');
-            jQuery('#place_order').click(function(e) {
-              e.preventDefault();
-
-              // Open the modal for collecting payment information
-              StartCheckout.open({
-                amount: <?php echo ($woocommerce->cart->total)*100; ?>,
-                currency: "<?php echo get_woocommerce_currency() ?>",
-                email: jQuery("#billing_email").val()
-              });
-
-              // Prevent resubmission
-              return false;
-            });
+             jQuery('#addCardBtn, #changeCardBtn').click(function() {
+               StartCheckout.open({
+                 amount: <?php echo ($woocommerce->cart->total)*100; ?>,
+                 currency: "<?php echo get_woocommerce_currency() ?>",
+                 email: jQuery("#billing_email").val(),
+                 form_label: 'OK'
+               });
+             });
           });
 
           /**
@@ -231,18 +226,18 @@ function woocommerce_payfort(){
           function submitFormWithToken(params) {
             // params.token.id, params.email
 
+            // remove old values if any
+            jQuery('input[name=payfortToken], input[name=payfortEmail]').remove();
+
             // Append the params to the form
             frmCheckout = jQuery("form[name=checkout]");
             frmCheckout.append("<input type='hidden' name='payfortToken' value='" + params.token.id + "'>");
             frmCheckout.append("<input type='hidden' name='payfortEmail' value='" + params.email + "'>");
 
-            // Finally, submit the form
-            btnOrder = jQuery('#place_order');
-            btnOrder.unbind('click');
-            btnOrder.click(function(e) {
-              return true;
-            });
-            btnOrder.click();
+            jQuery('#payfortCardDetails').show().html("<p>Pay with Card: xxxx-xxxx-xxxx-<b>" + params.token.card.last4 + "</b></p>");
+
+            jQuery('#addCardBtn').hide();
+            jQuery('#changeCardBtn').show();
           }
           </script>
           <?php
@@ -281,13 +276,13 @@ function woocommerce_payfort(){
 
             try {
                 if ($this->test_mode == 'yes') {
-                    Payfort::setApiKey($this->test_secret_key);
+                    Start::setApiKey($this->test_secret_key);
                 } else {
-                    Payfort::setApiKey($this->live_secret_key);
+                    Start::setApiKey($this->live_secret_key);
                 }
 
                 // Charge the token
-                $charge = Payfort_Charge::create($charge_args);
+                $charge = Start_Charge::create($charge_args);
 
                 // No exceptions? Yaay, all done!
                 $order->payment_complete();
@@ -296,7 +291,7 @@ function woocommerce_payfort(){
                     'redirect' => $this->get_return_url( $order )
                 );
 
-            } catch (Payfort_Error $e) {
+            } catch (Start_Error $e) {
                 // TODO: Can we get the extra params (so the error is more apparent)?
                 // e.g. Instead of "request params are invalid", we get
                 // "extras":{"amount":["minimum amount (in the smallest currency unit) is 185 for AED"]
